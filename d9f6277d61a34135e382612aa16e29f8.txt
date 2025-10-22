@@ -1,0 +1,72 @@
+// topo_matrix.c  (C99/gnu11均可编译)
+// 用邻接矩阵实现 Kahn 拓扑排序；时间复杂度 O(n^2 + m)
+#include <stdio.h>
+#include <string.h>
+
+#define MAXN 1000  // 最大点数，可按需调大
+
+static int adj[MAXN+1][MAXN+1]; // 邻接矩阵，adj[u][v] = 边数(允许多重边)
+static int indeg[MAXN+1];       // 入度
+static int q[MAXN+5];           // 简单数组队列
+static int order[MAXN+5];       // 结果
+
+int topo_sort_matrix(int n){
+    int ql = 0, qr = 0, olen = 0;
+
+    // 1) 将所有入度为0的点入队
+    for(int i = 1; i <= n; ++i)
+        if(indeg[i] == 0) q[qr++] = i;
+
+    // 2) 逐个弹出并“删除出边”
+    while(ql < qr){
+        int u = q[ql++];            // 取出入度为0的点
+        order[olen++] = u;
+
+        // 遍历邻接矩阵的第u行：对所有 v，若有边 u->v
+        for(int v = 1; v <= n; ++v){
+            int c = adj[u][v];
+            if(c > 0){
+                adj[u][v] = 0;      // 逻辑上“删掉”这些边
+                indeg[v] -= c;      // 入度减去边数
+                if(indeg[v] == 0)   // 变成0则入队
+                    q[qr++] = v;
+            }
+        }
+    }
+
+    // 3) 若输出数量!=n，说明存在环
+    if(olen != n) return 0;
+
+    // 打印结果
+    for(int i = 0; i < olen; ++i){
+        if(i) putchar(' ');
+        printf("%d", order[i]);
+    }
+    putchar('\n');
+    return 1;
+}
+
+int main(void){
+    int n, m;
+    if(scanf("%d %d", &n, &m) != 2) return 0;
+    if(n > MAXN){
+        fprintf(stderr, "n=%d 超过MAXN=%d，请增大宏。\n", n, MAXN);
+        return 0;
+    }
+
+    memset(adj, 0, sizeof(adj));
+    memset(indeg, 0, sizeof(indeg));
+
+    for(int i = 0; i < m; ++i){
+        int u, v;
+        scanf("%d %d", &u, &v); // 有向边 u->v
+        // 支持多重边：若输入重复边，也会累计
+        adj[u][v] += 1;
+        indeg[v]  += 1;
+    }
+
+    if(!topo_sort_matrix(n)){
+        printf("Graph has a cycle, no topological ordering.\n");
+    }
+    return 0;
+}
